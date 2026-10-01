@@ -30,11 +30,11 @@ critical.
 
 | Metric | Acceptable Low Score Scenario | Critical Low Score Scenario | Action Required |
 |---|---|---|---|
-| Faithfulness | | | |
-| Answer Relevance | | | |
-| Context Recall | | | |
-| Context Precision | | | |
-| Completeness | | | |
+| Faithfulness | Câu trả lời dùng paraphrase đúng nhưng token overlap với context thấp. | Có claim về giá, thời hạn, quyền lợi hoặc hành động không được evidence hỗ trợ. | Đối chiếu claim–evidence; block nếu claim quan trọng không grounded. |
+| Answer Relevance | Refusal an toàn ngắn hoặc câu trả lời cần hỏi thêm thông tin trước khi kết luận. | Trả lời sang chủ đề khác hoặc bỏ qua intent chính của khách hàng. | Kiểm tra intent routing và prompt; review các refusal bằng safety rubric. |
+| Context Recall | Câu hỏi đơn giản chỉ cần một phần nhỏ evidence dù expected answer dài. | Thiếu chunk chứa điều kiện quyết định eligibility, safety hoặc bước hành động chính. | Query expansion/reranking, sửa chunking và thêm regression case. |
+| Context Precision | Có vài chunks nền bổ sung nhưng chunk đúng vẫn đứng đầu. | Nhiễu đứng trước evidence đúng và làm generator chọn sai policy. | Rerank theo intent, giảm top-k hoặc thêm metadata filter. |
+| Completeness | Thiếu chi tiết phụ không đổi quyết định hoặc hành động của khách. | Thiếu deadline, fee, exception hay bước bảo mật làm thay đổi outcome. | Dùng answer checklist theo intent và verify coverage với expected claims. |
 
 ### Exercise 1.2 — Bias trong LLM-as-a-Judge
 
@@ -47,14 +47,27 @@ Ba bias thường gặp:
 **Câu 1: Thiết kế experiment phát hiện position bias với ít nhất hai conditions.**
 
 > *Câu trả lời:*
+> Tạo cùng một tập cặp câu trả lời A/B và chấm ở ít nhất hai conditions: condition
+> 1 trình bày A trước B, condition 2 đảo B trước A, giữ nguyên prompt, rubric và
+> decoding settings. So sánh tỷ lệ thắng và score delta của từng response giữa
+> hai thứ tự; randomize thứ tự trên nhiều cases. Nếu cùng một response được chấm
+> cao hơn có hệ thống khi đứng trước, judge có position bias.
 
 **Câu 2: Làm thế nào giảm verbosity bias bằng rubric design?**
 
 > *Câu trả lời:*
+> Rubric phải yêu cầu chấm theo correctness, coverage và evidence thay vì độ dài;
+> nêu rõ “không cộng điểm cho lặp lại hoặc chi tiết không cần thiết”, đặt giới hạn
+> độ dài hợp lý và yêu cầu judge chỉ ra claim nào làm thay đổi điểm. Dùng các
+> anchor examples gồm một answer ngắn-đúng và một answer dài nhưng lan man.
 
 **Câu 3: Tại sao cần calibrate LLM judge với human labels?**
 
 > *Câu trả lời:*
+> Human labels cung cấp chuẩn độc lập để đo agreement, phát hiện judge quá dễ/quá
+> nghiêm và các bias theo loại case. Sau calibration có thể chỉnh rubric,
+> threshold và escalation rule; các disagreement về safety/privacy phải được
+> human review thay vì tin tuyệt đối vào model judge.
 
 ### Exercise 1.3 — Evaluation trong CI/CD
 
@@ -62,13 +75,18 @@ Ba bias thường gặp:
 
 | Metric | Threshold | Lý do |
 |---|---:|---|
-| Faithfulness | | |
-| Answer Relevance | | |
-| Completeness | | |
+| Faithfulness | ≥ 0.80 | Claim không grounded có thể tạo cam kết sai hoặc hướng dẫn nguy hiểm. |
+| Answer Relevance | ≥ 0.70 | Cho phép paraphrase/refusal hợp lệ nhưng vẫn chặn câu trả lời lệch intent. |
+| Completeness | ≥ 0.75 | Bảo đảm điều kiện, deadline và bước hành động chính được bao phủ. |
 
 **Câu 2: Khi nào dùng offline evaluation, online evaluation và human review?**
 
 > *Câu trả lời:*
+> Offline evaluation chạy trên mọi PR và trước release để so sánh lặp lại trên
+> golden/regression set. Online evaluation theo dõi feedback, escalation,
+> latency và sampled conversations sau deploy để phát hiện drift thực tế. Human
+> review dùng cho safety/privacy, policy ambiguity, metric disagreement, mẫu
+> online rủi ro cao và để tạo nhãn hiệu chuẩn judge.
 
 ---
 
@@ -345,6 +363,6 @@ Hoàn thành kiểm tra cuối trong khoảng 11:50–12:00.
 - [x] Exercise 3.1 hoàn thành trong file JSON và bảng kết quả phía trên.
 - [x] Exercise 3.2 có năm metrics, aggregate report và ba cases thấp nhất.
 - [x] Exercise 3.3 có rubric 1–5 và bias controls.
-- [ ] `reflection.md` có ba failure analyses và regression strategy.
-- [ ] Đã copy `template.py` thành `solution/solution.py`.
-- [ ] Exercise 3.4 và 3.5 chỉ làm nếu chọn bonus.
+- [x] `reflection.md` có ba failure analyses và regression strategy.
+- [x] Đã đồng bộ `template.py` và `solution/solution.py`.
+- [x] Exercise 3.4 và 3.5 là bonus và không được chọn thực hiện.
